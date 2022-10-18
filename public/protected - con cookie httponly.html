@@ -1,0 +1,158 @@
+<!-- -------------------------------------- -->
+<!-- -------------------------------------- -->
+<!-- CODIGO DEL LADO DEL CLIENTE: NAVEGADOR -->
+<!-- -------------------------------------- -->
+<!-- -------------------------------------- -->
+
+<!-- Este código se ejecuta en el navegador. (NO en el servidor) -->
+
+<!-- Por eso funciona el fetch, y el acceder al DOM (document.getElementById...) -->
+
+<!-- Es el navegador el que interpreta este fichero. -->
+
+
+<!-- 
+    -------------------------------------------------------------------------------------------- 
+    Este ejemplo es para ver cómo el cliente hace un cierre de sesión. 
+    (En realidad no hay propiamente sesión: es eliminar la cookie que contiene el Refresh Token)
+    -------------------------------------------------------------------------------------------- 
+
+    Y también viene
+
+    -------------------------------------------------------------------------------------------- 
+    Este ejemplo es para ver cómo el cliente hace la petición al servidor,
+
+    primero: 
+        mandándole el Refresh Token, para que el servidor le mande a su vez el Token de Autenticación (Access Token),
+    y
+    segundo: 
+        con el Token de Autenticación (Access Token), cómo hace la petición al servidor, a su ruta: /protected,
+        para obtener la información del usuario.
+    --------------------------------------------------------------------------------------------
+
+    --------------------------------------------------------------------------------------------
+    Hace la petición al servidor, a su ruta protegida "/protected". 
+    (ver: routes\auth.route.js) (al final del fichero)
+    --------------------------------------------------------------------------------------------
+-->
+
+
+<!-- 
+    ----------------------
+    1.bmp, 2.bmp, 3.bmp 
+    ----------------------
+-->
+
+
+<!DOCTYPE html>
+
+<html lang="es">
+
+<head>
+    <meta charset="utf-8">
+    <title>Ruta protegida</title>
+
+</head>
+
+<body>
+    
+    <h1>Ruta protegida</h1>
+
+    <div>
+        <h2 id="email">Email: </h2>
+        <button id="logout">Cerrar sesión</button>
+    </div>
+
+    <script>
+
+        // -------------------------------------------------------------------------------------------------------------
+        // CERRAR SESIÓN
+        // -------------------------------------------------------------------------------------------------------------
+        /* 
+        No le envía el Token de Autenticación (Access Token),
+        pero imagino que en teoría debería enviárselo.
+
+        No se lo manda, porque en la ruta (routes\auth.route.js):
+            router.get("/logout", logout);
+        no pone ningún middleware para comprobar las credenciales, en este caso el Token de Autenticación (Access Token),
+        sino que directamente llama al controlador logout,
+
+        y este controlador simplemente borra del cliente navegador, una cookie llamada refreshToken.  
+        */
+        const logout = document.getElementById('logout');
+
+        logout.addEventListener('click', async (evento) => {
+            let res = await fetch('http://localhost:5000/api/v1/auth/logout', { method: 'GET' });
+
+            console.log(res);
+        });
+        // -------------------------------------------------------------------------------------------------------------
+
+
+        // -------------------------------------------------------------------------------------------------------------
+        // 1. PEDIR EL TOKEN DE AUTENTICACIÓN (ACCESS TOKEN) CON EL REFRESH TOKEN.
+        // 2. CON EL TOKEN DE AUTENTICACIÓN, HACER LA PETICIÓN DE DATOS DEL USUARIO.
+        // -------------------------------------------------------------------------------------------------------------
+        document.addEventListener('DOMContentLoaded', async (evento) => {
+            try {
+
+                // ------------------------------------------------------------------------------------------
+                // Usando el Refresh Token, solicitar el Token de Autenticación (Access Token).
+                let data1 = await fetch('http://localhost:5000/api/v1/auth/refresh', {
+                    method: 'GET',
+                    // Que al hacer la solicitud al servidor, incluya las credenciales:
+                    // que en este caso es la cookie que a su vez contiene el Refresh Token.
+                    credentials: 'include'
+                });
+
+                // El controlador refreshToken (en: controllers\auth.controller.js) 
+                // de la ruta /refresh (en: routes\auth.route.js) 
+                // devuelve: { token, expiresIn }
+                let { token } = await data1.json(); // token es el Token de Autenticación (Access Token) 
+                                                    // El cliente lo guarda en una variable en memoria, no en: localStorage, cookie, ...
+                // ------------------------------------------------------------------------------------------
+
+
+                // ------------------------------------------------------------------------------------------
+                // Ahora el cliente (navegador) hace la petición al servidor, a la ruta autenticada /protected
+                // para obtener la información del usuario,
+                // usando el Token de Autenticación (Access Token) anterior.
+                let data2 = await fetch('http://localhost:5000/api/v1/auth/protected', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                // ------------------------------------------------------------------------------------------
+
+                // Ver el objeto entero response que devuelve el servidor.
+                console.log(data2);
+
+                // Lee el response, y obtiene los datos en formato objeto de javascript.
+                let usuario = await data2.json();
+
+                // Ver los datos devueltos por el servidor.
+                console.log(usuario);
+
+                // Poner el email en la pantalla.
+                document.getElementById('email').textContent = usuario.email;
+
+            }
+            catch (error) {
+                console.log(error);
+            }
+        });
+
+
+
+
+    </script>
+
+
+
+</body>
+
+
+</html>
+

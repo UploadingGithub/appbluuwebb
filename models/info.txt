@@ -1,0 +1,11 @@
+Que en la aplicación se puedan registrar usuarios, con email y password.
+
+Tendremos 3 colecciones: 
+- una para sesiones
+- una para usuarios
+- una para urls (shortcut URLs)
+
+
+
+
+

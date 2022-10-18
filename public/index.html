@@ -1,0 +1,93 @@
+<!-- -------------------------------------- -->
+<!-- -------------------------------------- -->
+<!-- CODIGO DEL LADO DEL CLIENTE: NAVEGADOR -->
+<!-- -------------------------------------- -->
+<!-- -------------------------------------- -->
+
+<!-- Este código se ejecuta en el navegador. (NO en el servidor) -->
+
+<!-- Por eso funciona el fetch, y el acceder al DOM (document.getElementById...) -->
+
+<!-- Es el navegador el que interpreta este fichero. -->
+
+<!-- 
+    -------------------------------------------------------------------------------------------- 
+    Este ejemplo es para ver cómo el cliente hace la petición POST a la ruta /login del servidor,
+    y cómo el servidor le devuelve:
+    - el Token de Autenticación (Access Token)  -> que este cliente guarda en la variable token (de memoria RAM) 
+    - el Refresh Token                          -> que este cliente lo recibe del servidor en una cookie
+    --------------------------------------------------------------------------------------------
+-->
+
+
+
+<!DOCTYPE html>
+
+<html lang="es">
+
+<head>
+    <meta charset="utf-8">
+    <title>Login</title>
+
+</head>
+
+<body>
+    
+    <form id="form">
+        <input type="email" value="araceli@hotmail.com" id="email">
+        <input type="password" value="sdgfsdg" id="password">
+        <button type="submit">Acceder</button>
+    </form>
+
+    <script>
+        const form = document.getElementById('form');
+        const email = document.getElementById('email');
+        const password = document.getElementById('password');
+
+        form.addEventListener('submit', async (evento) => {
+            evento.preventDefault();
+
+            try {
+                
+                let res = await fetch('http://localhost:5000/api/v1/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    // When sending data to a web server, the data has to be a string.
+                    // Convert a JavaScript object into a string with:
+                    body: JSON.stringify({ email: email.value, password: password.value })
+                });
+
+                console.log(res);
+
+                // Convertir el body del Response stream, en un objeto Javascript.
+                let data = await res.json();
+
+                console.log(data);
+
+                /* 
+                El cliente navegador guarda el Token de Autenticación (Access Token), en una variable de su memoria RAM (en este caso: token),
+                que es con la que ahora podría hacer peticiones autenticadas al servidor.
+                
+                Esta variable no puede ser accedida por el otro HTML: public\protected - con cookie httponly.html, 
+                por eso ese otro HTML tiene primero que mandar el Refresh Token al servidor, 
+                para que el servidor le mande el Token de Autenticación (Access Token),
+                y con él poder hacer a continuación las peticiones autenticadas al servidor.
+                
+                (Pero en React esta variable (token) sí podría ser compartida)
+                */
+                let token = data.token;
+
+                console.log(token);
+            }
+            catch (error) {
+                console.log(error);
+            }
+        });
+
+    </script>
+
+
+</body>
+
+</html>
+
