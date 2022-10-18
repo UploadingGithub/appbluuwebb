@@ -37,9 +37,9 @@ const port = process.env.PORT || 5000;
 
 
 
-// ===========================================================================================================
+// ========================================================================================================================
 // CORS.
-// ===========================================================================================================
+// ========================================================================================================================
 // Ponerlo como el primer middleware, el prioritario, antes que todos los demás.
 
 
@@ -124,6 +124,7 @@ Esta es la forma menos correcta.
 const whiteList = [process.env.ORIGIN1];
 
 /* 
+--------------------------------------------------------------------------------------------------------------
 (El módulo cors hace que):
 La función (que define el origin) recibe 2 parámetros:
 
@@ -131,6 +132,59 @@ La función (que define el origin) recibe 2 parámetros:
     - callback  --> función callback de respuesta que recibe 2 parámetros:
                         - posible error:        err [object]  
                         - permiso de acceso:    allow [bool]
+--------------------------------------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------------------------------------
+- Opción del "!origin" en la función (que define el origin):
+
+        "If you do not want to block REST tools or server-to-server requests, add a !origin check in the origin function."
+
+        Es decir: 
+
+        Añadirle al if -------------------------------------------------------------------------------------------------------------> (2)
+        la opción: || (!origin)
+        para no bloquear:
+
+            - peticiones con herramientas como Postman (que no mandan la cabecera Origin)
+                    (porque en este momento cuando escribo esto, aún no hemos hecho el frontend, y necesitamos probar con Postman)
+
+                    sin el: || (!origin), 
+                    como Postman no manda cabecera Origin,
+                    entonces no entraría en el if -----------------------------------------------------------------------------------> (2)
+                    ya que no existe Origin que comparar con la white list de dominios permitidos.
+                    
+
+            - peticiones desde el mismo dominio:
+                    cuando se hacen peticiones desde el mismo dominio (server-to-server requests), 
+                    el Origin (parámetro origin) que recibe la función es undefined.
+
+                    Ejemplo:
+                    si el servidor está en: http://localhost:5000/
+                    y
+                    accedemos con el cliente/navegador desde el mismo dominio: http://localhost:5000/
+
+                    - Si ponemos que el CORS rechace peticiones desde el mismo dominio:
+                            es decir, no ponemos la opción: || (!origin) 
+                            entonces CORS dará error:
+                            (ver: 1.bmp)
+
+                    - Si ponemos que el CORS acepte peticiones desde el mismo dominio:
+                            es decir, sí ponemos la opción: || (!origin) 
+                            entonces CORS no dará error:
+                            (ver: 2.bmp)
+
+
+                    Nota:
+                    en realidad CORS no es que dé errores, sino que da protección, es una medida de seguridad,
+                    y por tanto lo que da son denegaciones.
+
+
+
+        En un deploy real, esta opción: || (!origin)
+        no se pondría en teoría.
+        Se pone ahora para poder hacer pruebas por ejemplo con Postman.
+--------------------------------------------------------------------------------------------------------------
+
 */
 app.use(
     cors({
@@ -141,7 +195,7 @@ app.use(
 
             // Si el Origin Server que hace la petición, SÍ está en nuestra lista blanca de servidores permitidos:
             // Enable CORS for this request.
-            if (whiteList.indexOf(origin) !== -1) callback(null, true);
+            if ((whiteList.indexOf(origin) !== -1) || (!origin)) callback(null, true); // <------------------------------------------ (2)
 
             // Si el Origin Server que hace la petición, NO está en nuestra lista blanca de servidores permitidos:
             // Disable CORS for this request.
@@ -152,7 +206,7 @@ app.use(
 );
 
 
-// ===========================================================================================================
+// ========================================================================================================================
 
 
 
